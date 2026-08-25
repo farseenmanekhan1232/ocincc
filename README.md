@@ -3,7 +3,9 @@
 Run [OpenCode Zen](https://opencode.ai/zen)'s **free AI models** (Big Pickle, Ox Alpha, MiMo, Hy3, Nemotron, DeepSeek Flash, Laguna…) inside **Claude Code** through a local protocol-translating proxy.
 
 ```bash
-npx ocincc@latest
+npx ocincc@latest        # from the npm registry
+# or, directly from GitHub:
+npx github:farseenmanekhan1232/ocincc
 ```
 
 That's it. The installer sets up a local LiteLLM proxy and a `zen-claude` launcher. Your existing `claude` command and `~/.claude/settings.json` are never touched.
