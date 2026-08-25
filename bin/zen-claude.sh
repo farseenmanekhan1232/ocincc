@@ -81,6 +81,21 @@ done < "$MODELS_CACHE"
 [ ${#MODELS[@]} -gt 0 ] || die "no free models found"
 log "free models available: ${MODELS[*]}"
 
+# ---------- live context-window sizes (cached 24h) ----------
+CTX_CACHE="$CACHE/context.txt"
+if [ ! -f "$CTX_CACHE" ] || [ -n "$(find "$CTX_CACHE" -mtime +1 2>/dev/null)" ]; then
+  curl -sf -m 30 https://models.dev/api.json \
+    | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+oc = d.get("opencode", {}).get("models", {})
+for mid, info in oc.items():
+    ctx = (info.get("limit") or {}).get("context")
+    if ctx:
+        print(f"{mid}\t{ctx}")
+' >"$CTX_CACHE.tmp" 2>/dev/null && mv "$CTX_CACHE.tmp" "$CTX_CACHE" || true
+fi
+
 # ---------- generate config ----------
 python3 - "$CONFIG" "$UA" "$PROJ_ID" "$SES_ID" "$PORT" <<'PYEOF'
 import os, sys
@@ -165,6 +180,16 @@ if [ -z "$MODEL" ]; then
 fi
 
 log "model: $MODEL"
+
+# ---------- context window ----------
+export CLAUDE_CODE_MAX_CONTEXT_TOKENS
+if [ -f "$CTX_CACHE" ]; then
+  CTX="$(awk -F'\t' -v m="$MODEL" '$1 == m {print $2}' "$CTX_CACHE")"
+  if [ -n "$CTX" ]; then
+    export CLAUDE_CODE_MAX_CONTEXT_TOKENS="$CTX"
+    log "context window: $CTX tokens"
+  fi
+fi
 
 # ---------- launch ----------
 export ANTHROPIC_BASE_URL="http://127.0.0.1:$PORT"

@@ -26,6 +26,7 @@ Claude Code ──(Anthropic /v1/messages)──▶ localhost:4000 ──transla
 
 - ✅ All current free Zen models in Claude Code (auto-discovered at launch)
 - ✅ Interactive model picker every session (or `--model <id>`)
+- ✅ Context window auto-configured per model (`CLAUDE_CODE_MAX_CONTEXT_TOKENS`) — 1M-context models get their full window
 - ✅ Automatic 429 fallbacks between models
 - ✅ Fresh client headers per session so you get the standard free-tier allowance
 - ✅ Zero changes to your Claude Code config
