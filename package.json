@@ -1,0 +1,26 @@
+{
+  "name": "ocincc",
+  "version": "1.0.0",
+  "description": "Use OpenCode Zen's free AI models inside Claude Code — one command setup",
+  "license": "MIT",
+  "bin": {
+    "ocincc": "./bin/ocincc.js"
+  },
+  "files": [
+    "bin/"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farseenmanekhan1232/ocincc.git"
+  },
+  "keywords": [
+    "claude-code",
+    "opencode",
+    "zen",
+    "free-models",
+    "litellm"
+  ]
+}
