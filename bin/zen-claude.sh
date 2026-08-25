@@ -124,7 +124,24 @@ def model_entry(name):
         x-opencode-session: "{headers['x-opencode-session']}"
 """
 
-body = "model_list:\n" + "\n".join(model_entry(m) for m in models)
+ctx = {}
+try:
+    for line in open(os.path.expanduser("~/.config/zen-claude/cache/context.txt")):
+        parts = line.rstrip("\n").split("\t")
+        if len(parts) == 2:
+            ctx[parts[0]] = int(parts[1])
+except FileNotFoundError:
+    pass
+
+# 1M-context models get an extra "[1m]" alias so Claude Code's
+# <model>[1m] naming resolves on the proxy
+entries = []
+for m in models:
+    entries.append(model_entry(m))
+    if ctx.get(m, 0) >= 1_000_000:
+        entries.append(model_entry(f"{m}[1m]"))
+
+body = "model_list:\n" + "\n".join(entries)
 fallbacks = [m for m in models if m not in ("big-pickle",)][:4]
 body += f"""
 litellm_settings:
@@ -183,6 +200,7 @@ log "model: $MODEL"
 
 # ---------- context window ----------
 export CLAUDE_CODE_MAX_CONTEXT_TOKENS
+CTX=""
 if [ -f "$CTX_CACHE" ]; then
   CTX="$(awk -F'\t' -v m="$MODEL" '$1 == m {print $2}' "$CTX_CACHE")"
   if [ -n "$CTX" ]; then
@@ -191,8 +209,24 @@ if [ -f "$CTX_CACHE" ]; then
   fi
 fi
 
+# ---------- map every model tier + subagents to the chosen model ----------
+MODEL_CC="$MODEL"
+if [ -n "$CTX" ] && [ "$CTX" -ge 1000000 ] 2>/dev/null; then
+  MODEL_CC="${MODEL}[1m]"
+fi
+export ANTHROPIC_MODEL="$MODEL_CC"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="$MODEL_CC"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="$MODEL_CC"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="$MODEL_CC"
+export ANTHROPIC_SMALL_FAST_MODEL="$MODEL_CC"
+export CLAUDE_CODE_SUBAGENT_MODEL="$MODEL_CC"
+
+# auto-compact at ~80% of the context window
+if [ -n "$CTX" ]; then
+  export CLAUDE_CODE_AUTO_COMPACT_WINDOW="$(( CTX * 80 / 100 ))"
+fi
+
 # ---------- launch ----------
 export ANTHROPIC_BASE_URL="http://127.0.0.1:$PORT"
 export ANTHROPIC_AUTH_TOKEN="$MASTER_KEY"
-export ANTHROPIC_MODEL="$MODEL"
 exec claude ${ARGS[@]+"${ARGS[@]}"}
